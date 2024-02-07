@@ -1,0 +1,85 @@
+---
+title: "DSA 8203 Homework 2"
+output: html_notebook
+---
+
+
+
+```{r}
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+library(randomForest)
+library(plyr)
+library(readr)
+library(janitor)
+library(purrr)
+
+#set working directory 
+setwd("C:/Users/Mercy Wawire/Documents/Module 2/PDS - Principles of Data Science")
+
+# 1. Importing 2020 sector data
+nse_sectors_2020 <- read.csv(file = 'NSE_data_stock_market_sectors_2020.csv')
+View(nse_sectors_2020)
+
+# 2. Importing NSE Data and merging the files into one File
+NSEfolder <- "NSE_Data2"
+nsefiles <- list.files(path = NSEfolder, pattern = "*.csv", full.names=TRUE)
+
+nsefilesv2 <- nsefiles %>%
+  map(read_csv) %>%
+ 
+  reduce(rbind)
+
+View(nsefilesv2)
+write_csv(nsefilesv2,"nsefilesv2.csv")
+
+
+#Change Date format from char
+nsefilesv2$Date2 = format(as.Date(nsefilesv2$DATE, "%d-%b-%y"), "%d-%m-%Y")
+nsefilesv2$Date3 <- lubridate::dmy(nsefilesv2$Date2)
+View(nsefilesv2)
+
+#Join Sector Data to NSE Stock Price Data
+nsefilesv3 <- merge(x=nsefilesv2, y=nsesectors, by = c("CODE" ), all = TRUE)
+View(nsefilesv3)
+
+# Omit Null Values
+merged_NSE <- na.omit(nsefilesv3)
+View(merged_NSE)
+
+# save file to my wd
+write_csv(nsefilesv4,"merged_NSE.csv")
+
+
+#Clean Up column names if necessary
+names(merged_NSE) <- gsub(" ", "_", names(merged_NSE))
+
+#subset to include only the company(s) of interest i.e Equity
+nseEquity <- subset(merged_NSE, subset = merged_NSE$CODE == "EQTY" )
+View(nseEquity)
+
+#Filter data from 2018
+nseEquity2 <- subset(nseEquity, subset = nseEquity$Date3 >= "2018-01-01" )
+View(nseEquity2)
+
+nseEquity2$month = format(nseEquity2$Date3,"%m")
+nseEquity2$year = format(nseEquity2$Date3,"%Y")
+nseEquity2$monthyear = paste(nseEquity2$year,nseEquity2$month )
+
+#plot a histogram
+qplot(nseEquity2$Previous, geom = "histogram")
+
+nseEquity3 <- ggplot(nseEquity2,aes(monthyear ,y=Previous, group=1)) + geom_jitter() + geom_smooth(model= "lm")
+print (d2)
+
+ggplot(nseEquity2, aes(x = Date3, y = Previous)) +
+  geom_line() +
+  labs(title = paste("Stock Prices for", "EQTY"),
+       x = "Date",
+       y = "Price") +
+  theme_minimal()
+```
+The above timeseries plot shows the price trends for Equity. During Covid-19 period (end of 2019 till Q1 of 2020), the prices were quite high.  
+
